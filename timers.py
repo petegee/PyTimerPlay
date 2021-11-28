@@ -2,16 +2,113 @@ import time
 import keyboard
 from dataclasses import dataclass
 
+times = []
+timing = False
+
+
 @dataclass
 class FlightTime:
     start: time
     stop: time
 
-times = []
-timing = False
+class TaskInterface:
+    def getTaskName(self) -> str:
+        """Show the task name"""
+        pass
+
+    def showTimes(self):
+        """show the flight times in a task-relevant fashion"""
+        pass
+
+    def getNextFlightTime(self) -> str:
+        """Get the next flight time"""
+        pass
+
+
+class BestThree(TaskInterface):
+    def getTaskName(self) -> str:
+        return "Best 3 Flights"
+
+    def showTimes(self):   
+        global times
+        times.sort(key=lambda x: (x.stop - x.start), reverse=True)
+        total = len(times)
+        if total > 0:
+            print(f'1st => {displayFlightTime(times[0])}')
+        if total > 1:
+            print(f'2nd => {displayFlightTime(times[1])}')
+        if total > 2:
+            print(f'3rd => {displayFlightTime(times[2])}')
+
+    def getNextFlightTime(self) -> str:
+        return "Max: 3:20"
+
+
+class LastThree(TaskInterface):
+    def getTaskName(self) -> str:
+        return "Last 3 Flights"
+
+    def showTimes(self):   
+        global times
+        total = len(times)
+        if total > 2:
+            print(f'3rd Last => {displayFlightTime(times[total-3])}')
+        if total > 1:
+            print(f'2nd Last => {displayFlightTime(times[total-2])}')
+        if total > 0:
+            print(f'Last     => {displayFlightTime(times[total-1])}')
+
+    def getNextFlightTime(self) -> str:
+        return "Max: 3:20"
+
+
+class Ladder(TaskInterface):
+    def getTaskName(self) -> str:
+        return "Ladder"
+
+    def showTimes(self):   
+        global times
+        total = len(times)
+        if total > 6:
+            print(f'2:00 => {displayFlightTime(times[total-1])}')
+        if total > 5:
+            print(f'1:45 => {displayFlightTime(times[total-2])}')
+        if total > 4:
+            print(f'1:30 => {displayFlightTime(times[total-3])}')
+        if total > 3:
+            print(f'1:15 => {displayFlightTime(times[total-4])}')
+        if total > 2:
+            print(f'1:00 => {displayFlightTime(times[total-5])}')
+        if total > 1:
+            print(f'0:45 => {displayFlightTime(times[total-6])}')
+        if total > 0:
+            print(f'0:30 => {displayFlightTime(times[total-7])}')
+
+    def getNextFlightTime(self) -> str:
+        global times
+        total = len(times)
+        if(total == 0):
+            return "Target: 0:30"
+        if(total == 1):
+            return "Target: 0:45"
+        if(total == 2):
+            return "Target: 1:00"
+        if(total == 3):
+            return "Target: 1:15"
+        if(total == 4):
+            return "Target: 1:30"
+        if(total == 5):
+            return "Target: 1:45"
+        if(total == 6):
+            return "Target: 2:00"
+
+
+tasks = [
+    BestThree(), 
+    LastThree(), 
+    Ladder()]
 
 currentTask = 0
-tasks = ["Task1", "Task2"]
 
 def displayFlightTime(flightTime):
     sec = flightTime.stop - flightTime.start
@@ -23,21 +120,20 @@ def displayFlightTime(flightTime):
 
 def startStopTimer():
     global timing
-    if timing is True:
+    if timing == True:
         stopTimer()
     else:
         startTimer()
         
 def showAllTimes():
-    global timing
-    if timing is True:
+    global timing, tasks
+    if timing == True:
         return
-    for (i,t) in enumerate(times):
-        print(f'Flight {i+1} => {displayFlightTime(t)}')
+    tasks[currentTask].showTimes()
 
 def startTimer():
     global timing
-    if timing is True:
+    if timing == True:
         return
     else:
         print("start")
@@ -47,7 +143,7 @@ def startTimer():
 
 def stopTimer():
     global timing
-    if timing is False:
+    if timing == False:
         return
     else:
         print("stop")
@@ -55,15 +151,19 @@ def stopTimer():
         currentFlight.stop = time.time()
         timing = False
         print(displayFlightTime(currentFlight))
+        print(f"{tasks[currentTask].getNextFlightTime()}")
 
 def changeTask():
+    global currentTask
     stopTimer()
     showAllTimes()
     reset()
-    for count, value in enumerate(tasks):     
-        print(count, value)
+    currentTask = currentTask + 1
+    if(currentTask >= len(tasks)):
+        currentTask = 0
 
-    print("Change Task")
+    print(f"Changed task to {tasks[currentTask].getTaskName()}")
+    print(f"{tasks[currentTask].getNextFlightTime()}")
 
 def reset():
     global times, timing
