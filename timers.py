@@ -24,6 +24,10 @@ class TaskInterface:
         """Get the next flight time"""
         pass
 
+    def getTaskTargetTimes(self) -> list[int]:
+        """Get the next flight time"""
+        pass
+
 
 class BestThree(TaskInterface):
     def getTaskName(self) -> str:
@@ -41,7 +45,13 @@ class BestThree(TaskInterface):
             print(f'3rd => {displayFlightTime(times[2])}')
 
     def getNextFlightTime(self) -> str:
-        return "Max: 3:20"
+        global times
+        total = len(times)
+        tasks = self.getTaskTargetTimes()
+        return f"Target: {secondsToMinutesAndSecondsOnly(tasks[0])}"
+
+    def getTaskTargetTimes(self) -> list[int]:
+        return [200]
 
 
 class LastThree(TaskInterface):
@@ -59,7 +69,13 @@ class LastThree(TaskInterface):
             print(f'Last     => {displayFlightTime(times[total-1])}')
 
     def getNextFlightTime(self) -> str:
-        return "Max: 3:20"
+        global times
+        total = len(times)
+        tasks = self.getTaskTargetTimes()
+        return f"Target: {secondsToMinutesAndSecondsOnly(tasks[0])}"
+
+    def getTaskTargetTimes(self) -> list[int]:
+        return [200]
 
 
 class Ladder(TaskInterface):
@@ -69,39 +85,28 @@ class Ladder(TaskInterface):
     def showTimes(self):   
         global times
         total = len(times)
-        if total > 6:
-            print(f'2:00 => {displayFlightTime(times[total-1])}')
-        if total > 5:
-            print(f'1:45 => {displayFlightTime(times[total-2])}')
-        if total > 4:
-            print(f'1:30 => {displayFlightTime(times[total-3])}')
-        if total > 3:
-            print(f'1:15 => {displayFlightTime(times[total-4])}')
-        if total > 2:
-            print(f'1:00 => {displayFlightTime(times[total-5])}')
-        if total > 1:
-            print(f'0:45 => {displayFlightTime(times[total-6])}')
-        if total > 0:
-            print(f'0:30 => {displayFlightTime(times[total-7])}')
+        i = 0
+        for time in times:
+            if i+1 >= len(self.getTaskTargetTimes()):
+                continue
+
+            print(f'{secondsToMinutesAndSecondsOnly(self.getTaskTargetTimes()[i])} => {displayFlightTime(time)}')
+            i = i + 1
 
     def getNextFlightTime(self) -> str:
         global times
         total = len(times)
-        if(total == 0):
-            return "Target: 0:30"
-        if(total == 1):
-            return "Target: 0:45"
-        if(total == 2):
-            return "Target: 1:00"
-        if(total == 3):
-            return "Target: 1:15"
-        if(total == 4):
-            return "Target: 1:30"
-        if(total == 5):
-            return "Target: 1:45"
-        if(total == 6):
-            return "Target: 2:00"
+        return f"Target: {secondsToMinutesAndSecondsOnly(self.getTaskTargetTimes()[total-1])}"
 
+    def getNextFlightTime(self) -> str:
+        global times
+        total = len(times)
+        if total >= len(self.getTaskTargetTimes()):
+            return "task complete"
+        return f"Target: {secondsToMinutesAndSecondsOnly(self.getTaskTargetTimes()[total])}"
+        
+    def getTaskTargetTimes(self) -> list[int]:
+        return [30, 45, 60, 75, 90, 105, 120]
 
 tasks = [
     BestThree(), 
@@ -110,8 +115,15 @@ tasks = [
 
 currentTask = 0
 
+def secondsToMinutesAndSecondsOnly(sec):
+    mins = sec // 60
+    sec = sec % 60
+    mins = mins % 60
+    millisecs = int(sec * 1000)
+    return f'{int(mins):02d}:{int(sec):02d}'
+
 def displayFlightTime(flightTime):
-    sec = flightTime.stop - flightTime.start
+    sec= flightTime.stop - flightTime.start
     mins = sec // 60
     sec = sec % 60
     mins = mins % 60
