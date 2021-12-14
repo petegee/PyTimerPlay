@@ -25,9 +25,16 @@ class TaskInterface:
         pass
 
     def getTaskTargetTimes(self) -> list[int]:
-        """Get the next flight time"""
+        """Get the taks target flight times"""
         pass
 
+    def hasLastFlightMetTarget(self, time) -> bool:
+        """Has the flight met the target time of the flight"""
+        pass
+
+    def isTaskComplete(self, time) -> bool:
+        """Is the task complete"""
+        pass
 
 class BestThree(TaskInterface):
     def getTaskName(self) -> str:
@@ -45,14 +52,17 @@ class BestThree(TaskInterface):
             print(f'3rd => {displayFlightTime(times[2])}')
 
     def getNextFlightTime(self) -> str:
-        global times
-        total = len(times)
         tasks = self.getTaskTargetTimes()
-        return f"Target: {secondsToMinutesAndSecondsOnly(tasks[0])}"
+        return f"Next fligt max: {secondsToMinutesAndSecondsOnly(tasks[0])}"
 
     def getTaskTargetTimes(self) -> list[int]:
         return [200]
 
+    def hasLastFlightMetTarget(self, time) -> bool:
+        return True
+
+    def isTaskComplete(self, time) -> bool:
+        return False
 
 class LastThree(TaskInterface):
     def getTaskName(self) -> str:
@@ -72,10 +82,16 @@ class LastThree(TaskInterface):
         global times
         total = len(times)
         tasks = self.getTaskTargetTimes()
-        return f"Target: {secondsToMinutesAndSecondsOnly(tasks[0])}"
+        return f"Next fligt max: {secondsToMinutesAndSecondsOnly(tasks[0])}"
 
     def getTaskTargetTimes(self) -> list[int]:
         return [200]
+
+    def hasLastFlightMetTarget(self, time) -> bool:
+        return True
+        
+    def isTaskComplete(self, time) -> bool:
+        return False
 
 
 class Ladder(TaskInterface):
@@ -96,17 +112,27 @@ class Ladder(TaskInterface):
     def getNextFlightTime(self) -> str:
         global times
         total = len(times)
-        return f"Target: {secondsToMinutesAndSecondsOnly(self.getTaskTargetTimes()[total-1])}"
+        return f"Next flight target: {secondsToMinutesAndSecondsOnly(self.getTaskTargetTimes()[total-1])}"
 
-    def getNextFlightTime(self) -> str:
+    def getTaskTargetTimes(self) -> list[int]:
+        return [1,2]
+        #return [30, 45, 60, 75, 90, 105, 120]
+
+    def hasLastFlightMetTarget(self, time) -> bool:
+        global times      
+        taskTargetTime = self.getTaskTargetTimes()[len(times)-1]
+        if(time > taskTargetTime):
+            return True
+        else:
+            return False
+        
+    def isTaskComplete(self) -> bool:
         global times
         total = len(times)
         if total >= len(self.getTaskTargetTimes()):
-            return "task complete"
-        return f"Target: {secondsToMinutesAndSecondsOnly(self.getTaskTargetTimes()[total])}"
-        
-    def getTaskTargetTimes(self) -> list[int]:
-        return [30, 45, 60, 75, 90, 105, 120]
+            return True
+        else:
+            return False
 
 tasks = [
     BestThree(), 
@@ -145,6 +171,10 @@ def showAllTimes():
 
 def startTimer():
     global timing
+    if tasks[currentTask].isTaskComplete():
+        print("Task complete")
+        return
+
     if timing == True:
         return
     else:
@@ -162,8 +192,14 @@ def stopTimer():
         currentFlight = times[len(times)-1]
         currentFlight.stop = time.time()
         timing = False
-        print(displayFlightTime(currentFlight))
-        print(f"{tasks[currentTask].getNextFlightTime()}")
+        task = tasks[currentTask]
+        mostRecentFlightTime = currentFlight.stop - currentFlight.start
+        if task.hasLastFlightMetTarget(mostRecentFlightTime):
+            print(f"Valid flight: {displayFlightTime(currentFlight)}")
+            print(f"{task.getNextFlightTime()}")
+        else:
+            print(f"Flight failed to meet target - {displayFlightTime(currentFlight)}")
+            times.pop() # clear last flight
 
 def changeTask():
     global currentTask
